@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         YouTube custom speeds
-// @namespace    http://techotom.wordpress.com
-// @version      0.1
+// @namespace    https://blog.techotom.com
+// @version      0.2
 // @description  try to take over the world!
-// @author       Tom Saleeba
+// @author       You
 // @match        https://www.youtube.com/*
 // @grant        none
 // ==/UserScript==
@@ -33,11 +33,11 @@ function appendSpeedControl(div, speed) {
     div.appendChild(speedAnchor);
 }
 
-var page = document.getElementById("page");
+var body = document.getElementsByTagName('body')[0];
 var div = document.createElement("div");
 div.style.position = "fixed";
-div.style.margin = "1em";
-div.style.fontSize = "1.5em";
+div.style.margin = "6em 0 0 2em";
+div.style.fontSize = "2em";
 div.style.background = "#FFF";
 div.style.zIndex = "2";
 appendSpeedControl(div, 1);
@@ -53,4 +53,4 @@ appendSpeedControl(div, 2.5);
 appendSpeedControl(div, 2.75);
 appendSpeedControl(div, 3);
 appendSpeedControl(div, 10);
-page.insertBefore(div, page.childNodes[0]);
+body.insertBefore(div, body.childNodes[0]);
