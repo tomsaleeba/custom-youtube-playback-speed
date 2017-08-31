@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         YouTube custom speeds
-// @namespace    https://blog.techotom.com
+// @namespace    https://github.com/tomsaleeba
 // @version      0.2
-// @description  try to take over the world!
-// @author       You
+// @description  Adds a div to the YouTube player page with custom speed controls
+// @author       Tom Saleeba
 // @match        https://www.youtube.com/*
-// @grant        none
+// @grant        unsafeWindow
 // ==/UserScript==
 /* jshint -W097 */
 'use strict';
@@ -33,24 +33,45 @@ function appendSpeedControl(div, speed) {
     div.appendChild(speedAnchor);
 }
 
-var body = document.getElementsByTagName('body')[0];
-var div = document.createElement("div");
-div.style.position = "fixed";
-div.style.margin = "6em 0 0 2em";
-div.style.fontSize = "2em";
-div.style.background = "#FFF";
-div.style.zIndex = "2";
-appendSpeedControl(div, 1);
-appendSpeedControl(div, 1.25);
-appendSpeedControl(div, 1.33);
-appendSpeedControl(div, 1.5);
-appendSpeedControl(div, 1.75);
-appendSpeedControl(div, 1.88);
-appendSpeedControl(div, 2);
-appendSpeedControl(div, 2.1);
-appendSpeedControl(div, 2.25);
-appendSpeedControl(div, 2.5);
-appendSpeedControl(div, 2.75);
-appendSpeedControl(div, 3);
-appendSpeedControl(div, 10);
-body.insertBefore(div, body.childNodes[0]);
+var callCount = 0;
+var maxCallCount = 50;
+function waitForTargetElement (callback) {
+    callCount++;
+    unsafeWindow.console.log('Check ' + callCount + '/' + maxCallCount + ' for target element');
+    if (callCount > maxCallCount) {
+        return;
+    }
+    var targetElement = document.getElementsByTagName('ytd-watch')[0];
+    if (typeof targetElement !== 'undefined') {
+        callback(targetElement);
+        return;
+    }
+    setTimeout(function () {
+        waitForTargetElement(callback);
+    }, 100);
+}
+
+waitForTargetElement(function (targetElement) {
+    var div = document.createElement("div");
+    div.style.position = "absolute";
+    div.style.margin = "6em 0 0 2em";
+    div.style.fontSize = "2em";
+    div.style.background = "#FFF";
+    div.style.zIndex = "2";
+    div.style.top = "0";
+    div.style.left = "0";
+    appendSpeedControl(div, 1);
+    appendSpeedControl(div, 1.25);
+    appendSpeedControl(div, 1.33);
+    appendSpeedControl(div, 1.5);
+    appendSpeedControl(div, 1.75);
+    appendSpeedControl(div, 1.88);
+    appendSpeedControl(div, 2);
+    appendSpeedControl(div, 2.1);
+    appendSpeedControl(div, 2.25);
+    appendSpeedControl(div, 2.5);
+    appendSpeedControl(div, 2.75);
+    appendSpeedControl(div, 3);
+    appendSpeedControl(div, 10);
+    targetElement.insertBefore(div, targetElement.childNodes[0]);
+});
