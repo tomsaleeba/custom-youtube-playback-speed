@@ -52,12 +52,20 @@ function waitForTargetElement (callback) {
 }
 
 waitForTargetElement(function (targetElement) {
+    var css = '.techotom-speed-control { opacity: 0.1; } .techotom-speed-control:hover { opacity: 0.8; }';
+    var head = document.head || document.getElementsByTagName('head')[0];
+    var style = document.createElement('style');
+    style.type = 'text/css';
+    style.appendChild(document.createTextNode(css));
+    head.appendChild(style);
+
     var div = document.createElement("div");
+    div.classList = 'techotom-speed-control';
     div.style.position = "absolute";
     div.style.margin = "6em 0 0 2em";
     div.style.fontSize = "2em";
     div.style.background = "#FFF";
-    div.style.zIndex = "2";
+    div.style.zIndex = "999";
     div.style.top = "0";
     div.style.left = "0";
     appendSpeedControl(div, 1);
