@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube custom speeds
 // @namespace    https://github.com/tomsaleeba
-// @version      0.2
+// @version      0.3
 // @description  Adds a div to the YouTube player page with custom speed controls
 // @author       Tom Saleeba
 // @match        https://www.youtube.com/*
@@ -9,6 +9,7 @@
 // ==/UserScript==
 /* jshint -W097 */
 'use strict';
+var logPrefix = '[custom speeds]';
 var console = console || {};
 var className = 'speed-selector';
 function resetBoldness() {
@@ -37,18 +38,31 @@ var callCount = 0;
 var maxCallCount = 50;
 function waitForTargetElement (callback) {
     callCount++;
-    unsafeWindow.console.log('Check ' + callCount + '/' + maxCallCount + ' for target element');
     if (callCount > maxCallCount) {
         return;
     }
-    var targetElement = document.getElementsByTagName('ytd-watch')[0];
-    if (typeof targetElement !== 'undefined') {
+    unsafeWindow.console.log(logPrefix + ' Check ' + callCount + '/' + maxCallCount + ' for target element');
+    var strategies = [
+        function ytdWatch() { return document.getElementsByTagName('ytd-watch')[0] },
+        function playerContainer() { return document.getElementById('player-container') },
+    ];
+    var targetElement
+    for (var i = 0; i < strategies.length; i++) {
+        var currStrategy = strategies[i];
+        targetElement = currStrategy();
+        if (targetElement) {
+            unsafeWindow.console.log(logPrefix + ' success with strategy: ' + currStrategy.name);
+            break;
+        }
+    }
+    if (typeof targetElement !== 'undefined' && targetElement !== null) {
         callback(targetElement);
         return;
     }
+    var waitMs = 10 * callCount
     setTimeout(function () {
         waitForTargetElement(callback);
-    }, 100);
+    }, waitMs);
 }
 
 waitForTargetElement(function (targetElement) {
