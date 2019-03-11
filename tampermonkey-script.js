@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube custom speeds
 // @namespace    https://github.com/tomsaleeba
-// @version      0.3
+// @version      0.4
 // @description  Adds a div to the YouTube player page with custom speed controls
 // @author       Tom Saleeba
 // @match        https://www.youtube.com/*
@@ -12,6 +12,9 @@
 var logPrefix = '[custom speeds]';
 var console = console || {};
 var className = 'speed-selector';
+var maxFastnessAnchorId = 'max-fastness';
+var adCheckerTimeout = 1000;
+
 function resetBoldness() {
     var speedSelectors = document.getElementsByClassName(className);
     for (var i = 0;i < speedSelectors.length;i++) {
@@ -20,7 +23,7 @@ function resetBoldness() {
     }
 }
 
-function appendSpeedControl(div, speed) {
+function appendSpeedControl(div, speed, idToUse) {
     var speedAnchor = document.createElement("a");
     speedAnchor.style.display = "block";
     speedAnchor.onclick = function() {
@@ -31,6 +34,9 @@ function appendSpeedControl(div, speed) {
     speedAnchor.classList.add('speed-selector');
     var label = document.createTextNode(speed + "x");
     speedAnchor.appendChild(label);
+    if (idToUse) {
+        speedAnchor.id = idToUse;
+    }
     div.appendChild(speedAnchor);
 }
 
@@ -94,6 +100,27 @@ waitForTargetElement(function (targetElement) {
     appendSpeedControl(div, 2.5);
     appendSpeedControl(div, 2.75);
     appendSpeedControl(div, 3);
-    appendSpeedControl(div, 10);
+    appendSpeedControl(div, 10, maxFastnessAnchorId);
     targetElement.insertBefore(div, targetElement.childNodes[0]);
+    scheduleAdCheck();
 });
+
+function autoFastForwardAds () {
+    // check for isHidden
+    var classForOnlyVideoAds = 'ytp-ad-player-overlay'; // .video-ads at the top level also includes footer ads
+    var [adContainer] = document.getElementsByClassName(classForOnlyVideoAds);
+    const isAdHidden = !adContainer || adContainer.offsetParent === null;
+    if (isAdHidden) {
+        scheduleAdCheck();
+        return;
+    }
+    var speedAnchor = document.getElementById(maxFastnessAnchorId);
+    unsafeWindow.console.log('[TechoTom] ad is playing, time to fast forward!');
+    speedAnchor.click();
+    scheduleAdCheck();
+    // TODO figure out when an ad isn't playing and stop fast forwarding
+}
+
+function scheduleAdCheck () {
+    setTimeout(autoFastForwardAds, adCheckerTimeout);
+}
