@@ -9,8 +9,6 @@
 // ==/UserScript==
 /* jshint -W097 */
 'use strict';
-var logPrefix = '[custom speeds]';
-var console = console || {};
 var className = 'speed-selector';
 var maxFastnessAnchorId = 'max-fastness';
 var adCheckerTimeout = 1000;
@@ -41,13 +39,9 @@ function appendSpeedControl(div, speed, idToUse) {
 }
 
 var callCount = 0;
-var maxCallCount = 50;
 function waitForTargetElement (callback) {
     callCount++;
-    if (callCount > maxCallCount) {
-        return;
-    }
-    unsafeWindow.console.log(logPrefix + ' Check ' + callCount + '/' + maxCallCount + ' for target element');
+    log('Check #' + callCount + ' for target element');
     var strategies = [
         function ytdWatch() { return document.getElementsByTagName('ytd-watch')[0] },
         function playerContainer() { return document.getElementById('player-container') },
@@ -57,7 +51,7 @@ function waitForTargetElement (callback) {
         var currStrategy = strategies[i];
         targetElement = currStrategy();
         if (targetElement) {
-            unsafeWindow.console.log(logPrefix + ' success with strategy: ' + currStrategy.name);
+            log('success with strategy: ' + currStrategy.name);
             break;
         }
     }
@@ -65,13 +59,14 @@ function waitForTargetElement (callback) {
         callback(targetElement);
         return;
     }
-    var waitMs = 10 * callCount
+    var waitMs = Math.max(10 * callCount, 2000);
     setTimeout(function () {
         waitForTargetElement(callback);
     }, waitMs);
 }
 
-waitForTargetElement(function (targetElement) {
+waitForTargetElement(
+  function (targetElement) {
     var css = '.techotom-speed-control { opacity: 0.1; } .techotom-speed-control:hover { opacity: 0.8; }';
     var head = document.head || document.getElementsByTagName('head')[0];
     var style = document.createElement('style');
@@ -103,24 +98,36 @@ waitForTargetElement(function (targetElement) {
     appendSpeedControl(div, 10, maxFastnessAnchorId);
     targetElement.insertBefore(div, targetElement.childNodes[0]);
     scheduleAdCheck();
-});
+  }
+);
 
 function autoFastForwardAds () {
-    // check for isHidden
     var classForOnlyVideoAds = 'ytp-ad-player-overlay'; // .video-ads at the top level also includes footer ads
     var [adContainer] = document.getElementsByClassName(classForOnlyVideoAds);
     const isAdHidden = !adContainer || adContainer.offsetParent === null;
-    if (isAdHidden) {
+    var speedAnchor = document.getElementById(maxFastnessAnchorId);
+    if (isAdHidden || !speedAnchor) {
         scheduleAdCheck();
         return;
     }
-    var speedAnchor = document.getElementById(maxFastnessAnchorId);
-    unsafeWindow.console.log('[TechoTom] ad is playing, time to fast forward!');
+    log('ad is playing, time to fast forward!');
     speedAnchor.click();
     scheduleAdCheck();
-    // TODO figure out when an ad isn't playing and stop fast forwarding
+    var [skipButton] = document.getElementsByClassName('ytp-ad-skip-button');
+    var isSkipButtonHidden = !skipButton || skipButton.offsetParent === null;
+    if (isSkipButtonHidden) {
+        scheduleAdCheck();
+        return;
+    }
+    log('skip button is visible, click it!');
+    skipButton.click();
 }
 
 function scheduleAdCheck () {
     setTimeout(autoFastForwardAds, adCheckerTimeout);
+}
+
+function log (msg) {
+    var logPrefix = '[TechoTom custom speeds]';
+    unsafeWindow.console.debug('[' + logPrefix + '] ' + msg);
 }
