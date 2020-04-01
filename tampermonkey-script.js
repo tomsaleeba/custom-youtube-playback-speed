@@ -160,6 +160,9 @@ function useSavedPlaybackSpeed() {
     }
     log('Using previously set playback speed: ' + savedSpeed);
     var speedAnchor = document.getElementsByClassName(speedToClassName(savedSpeed))[0];
+    if (!speedAnchor) {
+      return
+    }
     speedAnchor.click();
 }
 
