@@ -1,0 +1,28 @@
+{
+  "name": "custom-youtube-playback-speed",
+  "version": "0.6.0",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/tomsaleeba/custom-youtube-playback-speed.git"
+  },
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint *.js && prettier --check *.js",
+    "lint:fix": "eslint --fix *.js; prettier --write *.js"
+  },
+  "devDependencies": {
+    "eslint": "^7.29.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.23.4",
+    "prettier": "^2.3.2"
+  },
+  "description": "Tampermonkey script to allow custom playback speeds in YouTube site",
+  "bugs": {
+    "url": "https://github.com/tomsaleeba/custom-youtube-playback-speed/issues"
+  },
+  "homepage": "https://github.com/tomsaleeba/custom-youtube-playback-speed#readme",
+  "main": "tampermonkey-script.js",
+  "author": ""
+}

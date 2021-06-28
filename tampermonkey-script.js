@@ -1,27 +1,32 @@
 // ==UserScript==
 // @name         YouTube custom speeds
 // @namespace    https://github.com/tomsaleeba
-// @version      0.5
+// @version      0.6
 // @description  Adds a div to the YouTube player page with custom speed controls
 // @author       Tom Saleeba
 // @match        https://www.youtube.com/*
 // @grant        unsafeWindow
 // ==/UserScript==
 /* jshint -W097 */
-'use strict'
-var className = 'speed-selector'
-var maxFastnessAnchorId = 'max-fastness'
-var adCheckerTimeout = 1000
-var lsKeyPrefix = 'techotom.yt.'
-var lsKeyUserSpeed = lsKeyPrefix + 'user-speed'
-var lsKeyIsAdFF = lsKeyPrefix + 'is-ad-ff'
 
-function resetBoldness() {
-  var speedSelectors = document.getElementsByClassName(className)
-  for (var i = 0; i < speedSelectors.length; i++) {
-    var curr = speedSelectors[i]
+const maxFastnessAnchorId = 'max-fastness'
+const adCheckerTimeout = 1000
+const lsKeyPrefix = 'techotom.yt.'
+const lsKeyUserSpeed = `${lsKeyPrefix}user-speed`
+const lsKeyIsAdFF = `${lsKeyPrefix}is-ad-ff`
+let panner = null
+
+function resetBoldness(className) {
+  const speedSelectors = document.getElementsByClassName(className)
+  for (let i = 0; i < speedSelectors.length; i += 1) {
+    const curr = speedSelectors[i]
     curr.style.fontWeight = 'normal'
   }
+}
+
+function log(msg) {
+  const logPrefix = 'TechoTom custom speeds'
+  unsafeWindow.console.debug(`[${logPrefix}] ${msg}`)
 }
 
 function setPlayerSpeed(newSpeed) {
@@ -29,17 +34,18 @@ function setPlayerSpeed(newSpeed) {
 }
 
 function speedToClassName(speed) {
-  return 'techotom-yt-' + (speed + '').replace('.', '-')
+  return `techotom-yt-${`${speed}`.replace('.', '-')}`
 }
 
 function appendSpeedControl(div, speed, idToUse) {
-  var speedAnchor = document.createElement('a')
+  const className = 'speed-selector'
+  const speedAnchor = document.createElement('a')
   speedAnchor.style.display = 'block'
-  speedAnchor.onclick = function () {
+  speedAnchor.onclick = function handler () {
     setPlayerSpeed(speed)
-    resetBoldness()
+    resetBoldness(className)
     this.style.fontWeight = 'bold'
-    var isAdTriggeredSpeedChange = localStorage.getItem(lsKeyIsAdFF)
+    const isAdTriggeredSpeedChange = localStorage.getItem(lsKeyIsAdFF)
     localStorage.removeItem(lsKeyIsAdFF)
     if (isAdTriggeredSpeedChange) {
       return
@@ -48,9 +54,9 @@ function appendSpeedControl(div, speed, idToUse) {
     // re-setting the speed from the ads
     localStorage.setItem(lsKeyUserSpeed, speed)
   }
-  speedAnchor.classList.add('speed-selector')
+  speedAnchor.classList.add(className)
   speedAnchor.classList.add(speedToClassName(speed))
-  var label = document.createTextNode(speed + 'x')
+  const label = document.createTextNode(`${speed}x`)
   speedAnchor.appendChild(label)
   if (idToUse) {
     speedAnchor.id = idToUse
@@ -58,11 +64,35 @@ function appendSpeedControl(div, speed, idToUse) {
   div.appendChild(speedAnchor)
 }
 
-var callCount = 0
+function appendBalanceControl(div, label, valToUse) {
+  const className = 'balance-selector'
+  const balanceAnchor = document.createElement('a')
+  balanceAnchor.style.display = 'block'
+  balanceAnchor.onclick = function handler () {
+    resetBoldness(className)
+    this.style.fontWeight = 'bold'
+    const isPannerInited = !!panner
+    if (!isPannerInited) {
+      log('Initialising panner')
+      const audioCtx = new (unsafeWindow.AudioContext || unsafeWindow.webkitAudioContext)()
+      const myVideo = document.querySelector('video')
+      const source = audioCtx.createMediaElementSource(myVideo)
+      panner = audioCtx.createStereoPanner()
+      source.connect(panner).connect(audioCtx.destination)
+    }
+    log(`Panning to ${label} (${valToUse})`)
+    panner.pan.value = valToUse
+  }
+  balanceAnchor.classList.add(className)
+  balanceAnchor.appendChild(document.createTextNode(label))
+  div.appendChild(balanceAnchor)
+}
+
+let callCount = 0
 function waitForTargetElement(callback) {
-  callCount++
-  log('Check #' + callCount + ' for target element')
-  var strategies = [
+  callCount += 1
+  log(`Check #${callCount} for target element`)
+  const strategies = [
     function ytdWatch() {
       return document.getElementsByTagName('ytd-watch')[0]
     },
@@ -70,12 +100,12 @@ function waitForTargetElement(callback) {
       return document.getElementById('player-container')
     },
   ]
-  var targetElement
-  for (var i = 0; i < strategies.length; i++) {
-    var currStrategy = strategies[i]
+  let targetElement
+  for (let i = 0; i < strategies.length; i += 1) {
+    const currStrategy = strategies[i]
     targetElement = currStrategy()
     if (targetElement) {
-      log('success with strategy: ' + currStrategy.name)
+      log(`success with strategy: ${currStrategy.name}`)
       break
     }
   }
@@ -83,30 +113,43 @@ function waitForTargetElement(callback) {
     callback(targetElement)
     return
   }
-  var waitMs = Math.max(10 * callCount, 2000)
-  setTimeout(function () {
+  const waitMs = Math.max(10 * callCount, 2000)
+  setTimeout(() => {
     waitForTargetElement(callback)
   }, waitMs)
 }
 
-waitForTargetElement(function (targetElement) {
-  var css =
-    '.techotom-speed-control { opacity: 0.1; } .techotom-speed-control:hover { opacity: 0.8; }'
-  var head = document.head || document.getElementsByTagName('head')[0]
-  var style = document.createElement('style')
+function appendCss() {
+  const css = `
+    .techotom-speed-control .techotom-balance-control {
+      opacity: 0.1;
+    }
+    .techotom-speed-control:hover .techotom-balance-control:hover {
+      opacity: 0.8;
+    }
+  `
+  const head = document.head || document.getElementsByTagName('head')[0]
+  const style = document.createElement('style')
   style.type = 'text/css'
   style.appendChild(document.createTextNode(css))
   head.appendChild(style)
+}
 
-  var div = document.createElement('div')
-  div.classList = 'techotom-speed-control'
+function addCommonStyles(div) {
   div.style.position = 'absolute'
-  div.style.margin = '6em 0 0 2em'
   div.style.fontSize = '2em'
   div.style.background = '#FFF'
   div.style.zIndex = '999'
   div.style.top = '0'
   div.style.left = '0'
+  div.style.borderRadius = '5px'
+}
+
+function appendSpeedControlContainer(targetElement) {
+  const div = document.createElement('div')
+  div.classList = 'techotom-speed-control'
+  addCommonStyles(div)
+  div.style.margin = '6em 0 0 2em'
   appendSpeedControl(div, 1)
   appendSpeedControl(div, 1.25)
   appendSpeedControl(div, 1.33)
@@ -121,14 +164,55 @@ waitForTargetElement(function (targetElement) {
   appendSpeedControl(div, 3)
   appendSpeedControl(div, 10, maxFastnessAnchorId)
   targetElement.insertBefore(div, targetElement.childNodes[0])
+}
+
+function appendBalanceControlContainer(targetElement) {
+  const div = document.createElement('div')
+  div.classList = 'techotom-balance-control'
+  addCommonStyles(div)
+  div.style.margin = '1em 0 0 2em'
+  appendBalanceControl(div, 'centre', 0)
+  appendBalanceControl(div, 'left', -1)
+  appendBalanceControl(div, 'right', 1)
+  targetElement.insertBefore(div, targetElement.childNodes[0])
+}
+
+function scheduleAdCheck() {
+  setTimeout(autoFastForwardAds, adCheckerTimeout) // eslint-disable-line no-use-before-define
+}
+
+waitForTargetElement((targetElement) => {
+  appendCss()
+  appendSpeedControlContainer(targetElement)
+  appendBalanceControlContainer(targetElement)
   scheduleAdCheck()
 })
 
+function useSavedPlaybackSpeed() {
+  const savedSpeed = localStorage.getItem(lsKeyUserSpeed)
+  if (!savedSpeed) {
+    return
+  }
+  const existingSpeed =
+    document.getElementsByClassName('html5-main-video')[0].playbackRate
+  if (parseFloat(existingSpeed) === parseFloat(savedSpeed)) {
+    return
+  }
+  log(`Using previously set playback speed: ${savedSpeed}`)
+  const speedAnchor = document.getElementsByClassName(
+    speedToClassName(savedSpeed),
+  )[0]
+  if (!speedAnchor) {
+    return
+  }
+  speedAnchor.click()
+}
+
 function autoFastForwardAds() {
-  var classForOnlyVideoAds = 'ytp-ad-player-overlay' // .video-ads at the top level also includes footer ads
-  var [adContainer] = document.getElementsByClassName(classForOnlyVideoAds)
+  const classForOnlyVideoAds = 'ytp-ad-player-overlay' // .video-ads at the top level also includes footer ads
+  const [adContainer] = document.getElementsByClassName(classForOnlyVideoAds)
   const isAdHidden = !adContainer || adContainer.offsetParent === null
-  var speedAnchor = document.getElementById(maxFastnessAnchorId)
+  const speedAnchor = document.getElementById(maxFastnessAnchorId)
   if (isAdHidden || !speedAnchor) {
     scheduleAdCheck()
     useSavedPlaybackSpeed()
@@ -138,41 +222,12 @@ function autoFastForwardAds() {
   localStorage.setItem(lsKeyIsAdFF, true)
   speedAnchor.click()
   scheduleAdCheck()
-  var [skipButton] = document.getElementsByClassName('ytp-ad-skip-button')
-  var isSkipButtonHidden = !skipButton || skipButton.offsetParent === null
+  const [skipButton] = document.getElementsByClassName('ytp-ad-skip-button')
+  const isSkipButtonHidden = !skipButton || skipButton.offsetParent === null
   if (isSkipButtonHidden) {
     scheduleAdCheck()
     return
   }
   log('skip button is visible, click it!')
   skipButton.click()
-}
-
-function scheduleAdCheck() {
-  setTimeout(autoFastForwardAds, adCheckerTimeout)
-}
-
-function useSavedPlaybackSpeed() {
-  var savedSpeed = localStorage.getItem(lsKeyUserSpeed)
-  if (!savedSpeed) {
-    return
-  }
-  var existingSpeed = document.getElementsByClassName('html5-main-video')[0]
-    .playbackRate
-  if (parseFloat(existingSpeed) === parseFloat(savedSpeed)) {
-    return
-  }
-  log('Using previously set playback speed: ' + savedSpeed)
-  var speedAnchor = document.getElementsByClassName(
-    speedToClassName(savedSpeed)
-  )[0]
-  if (!speedAnchor) {
-    return
-  }
-  speedAnchor.click()
-}
-
-function log(msg) {
-  var logPrefix = 'TechoTom custom speeds'
-  unsafeWindow.console.debug('[' + logPrefix + '] ' + msg)
 }
