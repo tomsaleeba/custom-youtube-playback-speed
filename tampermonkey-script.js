@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube custom speeds
 // @namespace    https://github.com/tomsaleeba
-// @version      0.6
+// @version      0.7
 // @description  Adds a div to the YouTube player page with custom speed controls
 // @author       Tom Saleeba
 // @match        https://www.youtube.com/*
@@ -10,7 +10,7 @@
 /* jshint -W097 */
 
 const maxFastnessAnchorId = 'max-fastness'
-const adCheckerTimeout = 1000
+const mainLoopInterval = 1000
 const lsKeyPrefix = 'techotom.yt.'
 const lsKeyUserSpeed = `${lsKeyPrefix}user-speed`
 const lsKeyIsAdFF = `${lsKeyPrefix}is-ad-ff`
@@ -41,7 +41,7 @@ function appendSpeedControl(div, speed, idToUse) {
   const className = 'speed-selector'
   const speedAnchor = document.createElement('a')
   speedAnchor.style.display = 'block'
-  speedAnchor.onclick = function handler () {
+  speedAnchor.onclick = function handler() {
     setPlayerSpeed(speed)
     resetBoldness(className)
     this.style.fontWeight = 'bold'
@@ -68,13 +68,14 @@ function appendBalanceControl(div, label, valToUse) {
   const className = 'balance-selector'
   const balanceAnchor = document.createElement('a')
   balanceAnchor.style.display = 'block'
-  balanceAnchor.onclick = function handler () {
+  balanceAnchor.onclick = function handler() {
     resetBoldness(className)
     this.style.fontWeight = 'bold'
     const isPannerInited = !!panner
     if (!isPannerInited) {
       log('Initialising panner')
-      const audioCtx = new (unsafeWindow.AudioContext || unsafeWindow.webkitAudioContext)()
+      const audioCtx = new (unsafeWindow.AudioContext ||
+        unsafeWindow.webkitAudioContext)()
       const myVideo = document.querySelector('video')
       const source = audioCtx.createMediaElementSource(myVideo)
       panner = audioCtx.createStereoPanner()
@@ -177,17 +178,6 @@ function appendBalanceControlContainer(targetElement) {
   targetElement.insertBefore(div, targetElement.childNodes[0])
 }
 
-function scheduleAdCheck() {
-  setTimeout(autoFastForwardAds, adCheckerTimeout) // eslint-disable-line no-use-before-define
-}
-
-waitForTargetElement((targetElement) => {
-  appendCss()
-  appendSpeedControlContainer(targetElement)
-  appendBalanceControlContainer(targetElement)
-  scheduleAdCheck()
-})
-
 function useSavedPlaybackSpeed() {
   const savedSpeed = localStorage.getItem(lsKeyUserSpeed)
   if (!savedSpeed) {
@@ -214,20 +204,56 @@ function autoFastForwardAds() {
   const isAdHidden = !adContainer || adContainer.offsetParent === null
   const speedAnchor = document.getElementById(maxFastnessAnchorId)
   if (isAdHidden || !speedAnchor) {
-    scheduleAdCheck()
     useSavedPlaybackSpeed()
     return
   }
   log('ad is playing, time to fast forward!')
   localStorage.setItem(lsKeyIsAdFF, true)
   speedAnchor.click()
-  scheduleAdCheck()
   const [skipButton] = document.getElementsByClassName('ytp-ad-skip-button')
   const isSkipButtonHidden = !skipButton || skipButton.offsetParent === null
   if (isSkipButtonHidden) {
-    scheduleAdCheck()
     return
   }
   log('skip button is visible, click it!')
   skipButton.click()
+  // FIXME disable check for ads from now on?
 }
+
+function clickBtnIfVisible(className, niceName) {
+  const [btn] = document.getElementsByClassName(className)
+  // FIXME might need .offsetParent stuff?
+  if (!btn || btn.offsetParent === null) {
+    return
+  }
+  log(`${niceName} button found, clicking`)
+  btn.click()
+}
+
+function cancelStupidAutoplay() {
+  clickBtnIfVisible(
+    'ytp-autonav-endscreen-upnext-cancel-button',
+    'autoplay cancel',
+  )
+}
+
+function skipSurvey() {
+  clickBtnIfVisible('ytp-ad-skip-button ytp-button', 'skip survey')
+}
+
+function runMainLoop() {
+  function worker() {
+    autoFastForwardAds()
+    cancelStupidAutoplay()
+    skipSurvey()
+  }
+  /* const intervalThingy = */ setInterval(worker, mainLoopInterval)
+  // FIXME do we need to clearInterval(intervalThingy) ?
+}
+
+waitForTargetElement((targetElement) => {
+  appendCss()
+  appendSpeedControlContainer(targetElement)
+  appendBalanceControlContainer(targetElement)
+  runMainLoop()
+})
