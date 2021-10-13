@@ -132,8 +132,8 @@ function appendCss() {
     .techotom-speed-control:hover, .techotom-balance-control:hover {
       opacity: 0.8;
     }
-    .techotom-speed-control a:hover, .techotom-balance-control a:hover {
-      color: #000;
+    .techotom-speed-control a.speed-selector:hover, .techotom-balance-control a.balance-selector:hover {
+      color: #4f4f4f;
     }
   `
   const head = document.head || document.getElementsByTagName('head')[0]
