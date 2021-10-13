@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube custom speeds
 // @namespace    https://github.com/tomsaleeba
-// @version      0.7
+// @version      0.8
 // @description  Adds a div to the YouTube player page with custom speed controls
 // @author       Tom Saleeba
 // @match        https://www.youtube.com/*
@@ -94,6 +94,9 @@ function waitForTargetElement(callback) {
   callCount += 1
   log(`Check #${callCount} for target element`)
   const strategies = [
+    function noId() {
+      return document.querySelectorAll('.html5-video-player')[0]
+    },
     function ytdWatch() {
       return document.getElementsByTagName('ytd-watch')[0]
     },
@@ -122,11 +125,15 @@ function waitForTargetElement(callback) {
 
 function appendCss() {
   const css = `
-    .techotom-speed-control .techotom-balance-control {
+    .techotom-speed-control, .techotom-balance-control {
       opacity: 0.1;
+      color: #000;
     }
-    .techotom-speed-control:hover .techotom-balance-control:hover {
+    .techotom-speed-control:hover, .techotom-balance-control:hover {
       opacity: 0.8;
+    }
+    .techotom-speed-control a:hover, .techotom-balance-control a:hover {
+      color: #000;
     }
   `
   const head = document.head || document.getElementsByTagName('head')[0]
@@ -241,11 +248,31 @@ function skipSurvey() {
   clickBtnIfVisible('ytp-ad-skip-button ytp-button', 'skip survey')
 }
 
+function skipPremiumTrial() {
+  const niceName = 'Skip trial'
+  const [btn] = document.querySelectorAll('#button[aria-label="Skip trial"]')
+  if (!btn || btn.offsetParent === null) {
+    return
+  }
+  log(`${niceName} button found, clicking`)
+  btn.click()
+}
+
+function fadeAdOverlay() {
+  const [thingy] = document.querySelectorAll('.ytp-ad-overlay-container')
+  if (!thingy || thingy.offsetParent === null) {
+    return
+  }
+  thingy.style.opacity = '0.1'
+}
+
 function runMainLoop() {
   function worker() {
     autoFastForwardAds()
     cancelStupidAutoplay()
     skipSurvey()
+    skipPremiumTrial()
+    fadeAdOverlay()
   }
   /* const intervalThingy = */ setInterval(worker, mainLoopInterval)
   // FIXME do we need to clearInterval(intervalThingy) ?
