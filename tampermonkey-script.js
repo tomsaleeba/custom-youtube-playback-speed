@@ -186,9 +186,12 @@ function appendBalanceControlContainer(targetElement) {
 }
 
 function liveBroadcast() {
+  if (!document.getElementById('watch7-content')) {
+    return false
+  }
   const spanCount = document.getElementById('watch7-content').getElementsByTagName('span').length
   if (spanCount == 3) {
-      return document.getElementById('watch7-content').getElementsByTagName('span')[2].getElementsByTagName('meta')[0].content
+      return document.querySelector('#watch7-content span meta[itemprop=isLiveBroadcast]').content == 'True'
   }
   return false
 }
