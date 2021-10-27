@@ -185,7 +185,18 @@ function appendBalanceControlContainer(targetElement) {
   targetElement.insertBefore(div, targetElement.childNodes[0])
 }
 
+function liveBroadcast() {
+  const spanCount = document.getElementById('watch7-content').getElementsByTagName('span').length
+  if (spanCount == 3) {
+      return document.getElementById('watch7-content').getElementsByTagName('span')[2].getElementsByTagName('meta')[0].content
+  }
+  return false
+}
+
 function useSavedPlaybackSpeed() {
+  if (liveBroadcast()) {
+    return
+  }
   const savedSpeed = localStorage.getItem(lsKeyUserSpeed)
   if (!savedSpeed) {
     return
