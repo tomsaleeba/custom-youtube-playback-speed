@@ -185,19 +185,25 @@ function appendBalanceControlContainer(targetElement) {
   targetElement.insertBefore(div, targetElement.childNodes[0])
 }
 
-function liveBroadcast() {
+function isLiveBroadcast() {
   if (!document.getElementById('watch7-content')) {
     return false
   }
-  const spanCount = document.getElementById('watch7-content').getElementsByTagName('span').length
-  if (spanCount == 3) {
-      return document.querySelector('#watch7-content span meta[itemprop=isLiveBroadcast]').content == 'True'
+  const spanCount = document
+    .getElementById('watch7-content')
+    .getElementsByTagName('span').length
+  if (spanCount === 3) {
+    return (
+      document.querySelector(
+        '#watch7-content span meta[itemprop=isLiveBroadcast]',
+      ).content === 'True'
+    )
   }
   return false
 }
 
 function useSavedPlaybackSpeed() {
-  if (liveBroadcast()) {
+  if (isLiveBroadcast()) {
     return
   }
   const savedSpeed = localStorage.getItem(lsKeyUserSpeed)
