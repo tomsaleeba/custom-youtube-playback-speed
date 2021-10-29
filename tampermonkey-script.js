@@ -189,6 +189,11 @@ function isLiveBroadcast() {
   if (!document.getElementById('watch7-content')) {
     return false
   }
+  const videoEndDateTime = document.querySelector('#watch7-content span meta[itemprop=endDate]').content.slice(0, 19)
+  const currentDateTime = new Date().toISOString().slice(0, 19)
+  if (currentDateTime > videoEndDateTime) {
+    return false
+  }
   const spanCount = document
     .getElementById('watch7-content')
     .getElementsByTagName('span').length
