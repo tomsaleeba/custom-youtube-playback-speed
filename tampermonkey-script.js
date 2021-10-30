@@ -186,25 +186,31 @@ function appendBalanceControlContainer(targetElement) {
 }
 
 function isLiveBroadcast() {
-  if (!document.getElementById('watch7-content')) {
+  const watch7content = document.getElementById('watch7-content')
+  if (!watch7content) {
     return false
   }
-  const videoEndDateTime = document.querySelector('#watch7-content span meta[itemprop=endDate]').content.slice(0, 19)
+  if (watch7content.getElementsByTagName('span').length === 2) {
+    return false
+  }
+  const span3 = watch7content.getElementsByTagName('span')[2]
+  // live broadcasts that haven't ended yet
+  if (
+    span3.querySelector('meta[itemprop=startDate]') &&
+    !span3.querySelector('meta[itemprop=endDate]')
+  ) {
+    return true
+  }
+  const videoEndDateTime = span3
+    .querySelector('meta[itemprop=endDate]')
+    .content.slice(0, 19)
   const currentDateTime = new Date().toISOString().slice(0, 19)
   if (currentDateTime > videoEndDateTime) {
     return false
   }
-  const spanCount = document
-    .getElementById('watch7-content')
-    .getElementsByTagName('span').length
-  if (spanCount === 3) {
-    return (
-      document.querySelector(
-        '#watch7-content span meta[itemprop=isLiveBroadcast]',
-      ).content === 'True'
-    )
-  }
-  return false
+  return (
+    span3.querySelector('meta[itemprop=isLiveBroadcast]').content === 'True'
+  )
 }
 
 function useSavedPlaybackSpeed() {
