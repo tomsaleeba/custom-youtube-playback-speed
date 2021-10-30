@@ -1,6 +1,6 @@
 {
   "name": "custom-youtube-playback-speed",
-  "version": "0.6.0",
+  "version": "0.8.0",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/tomsaleeba/custom-youtube-playback-speed.git"
@@ -9,7 +9,7 @@
   "license": "MIT",
   "scripts": {
     "lint": "eslint *.js && prettier --check *.js",
-    "lint:fix": "eslint --fix *.js; prettier --write *.js"
+    "lint:fix": "eslint --fix *.js && prettier --write *.js"
   },
   "devDependencies": {
     "eslint": "^7.29.0",
