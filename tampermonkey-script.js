@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube custom speeds
 // @namespace    https://github.com/tomsaleeba
-// @version      0.8
+// @version      0.9
 // @description  Adds a div to the YouTube player page with custom speed controls
 // @author       Tom Saleeba
 // @match        https://www.youtube.com/*
@@ -248,19 +248,22 @@ function autoFastForwardAds() {
   log('ad is playing, time to fast forward!')
   localStorage.setItem(lsKeyIsAdFF, true)
   speedAnchor.click()
-  const [skipButton] = document.getElementsByClassName('ytp-ad-skip-button')
-  const isSkipButtonHidden = !skipButton || skipButton.offsetParent === null
-  if (isSkipButtonHidden) {
-    return
-  }
-  log('skip button is visible, click it!')
-  skipButton.click()
+  clickBtnIfVisible('ytp-ad-skip-button', 'old skip button')
+  clickBtnIfVisible('ytp-ad-skip-button-modern', 'new skip button')
   // FIXME disable check for ads from now on?
 }
 
 function clickBtnIfVisible(className, niceName) {
   const [btn] = document.getElementsByClassName(className)
-  // FIXME might need .offsetParent stuff?
+  _clickButtonIfClickable(btn, niceName)
+}
+
+function clickBtnIfVisibleQS(querySelector, niceName) {
+  const [btn] = document.querySelectorAll(querySelector)
+  _clickButtonIfClickable(btn, niceName)
+}
+
+function _clickButtonIfClickable(btn, niceName) {
   if (!btn || btn.offsetParent === null) {
     return
   }
@@ -279,14 +282,15 @@ function skipSurvey() {
   clickBtnIfVisible('ytp-ad-skip-button ytp-button', 'skip survey')
 }
 
-function skipPremiumTrial() {
+function skipPremiumTrial() { // this may be no longer relevant now
   const niceName = 'Skip trial'
-  const [btn] = document.querySelectorAll('#button[aria-label="Skip trial"]')
-  if (!btn || btn.offsetParent === null) {
-    return
-  }
-  log(`${niceName} button found, clicking`)
-  btn.click()
+  clickBtnIfVisibleQS('#button[aria-label="Skip trial"]', niceName)
+}
+
+
+function premiumNoThanks() {
+  const niceName = 'No thanks premium'
+  clickBtnIfVisibleQS('ytd-mealbar-promo-renderer #dismiss-button', niceName)
 }
 
 function fadeAdOverlay() {
@@ -303,6 +307,7 @@ function runMainLoop() {
     cancelStupidAutoplay()
     skipSurvey()
     skipPremiumTrial()
+    premiumNoThanks()
     fadeAdOverlay()
   }
   /* const intervalThingy = */ setInterval(worker, mainLoopInterval)
