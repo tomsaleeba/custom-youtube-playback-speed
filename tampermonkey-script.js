@@ -282,11 +282,11 @@ function skipSurvey() {
   clickBtnIfVisible('ytp-ad-skip-button ytp-button', 'skip survey')
 }
 
-function skipPremiumTrial() { // this may be no longer relevant now
+function skipPremiumTrial() {
+  // this may be no longer relevant now
   const niceName = 'Skip trial'
   clickBtnIfVisibleQS('#button[aria-label="Skip trial"]', niceName)
 }
-
 
 function premiumNoThanks() {
   const niceName = 'No thanks premium'
