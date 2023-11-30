@@ -283,9 +283,8 @@ function skipSurvey() {
 }
 
 function skipPremiumTrial() {
-  // this may be no longer relevant now
-  const niceName = 'Skip trial'
-  clickBtnIfVisibleQS('#button[aria-label="Skip trial"]', niceName)
+  const niceName = 'Skip premium trial'
+  clickBtnIfVisibleQS('button[aria-label="No thanks"]', niceName)
 }
 
 function premiumNoThanks() {
