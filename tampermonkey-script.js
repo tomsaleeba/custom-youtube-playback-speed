@@ -233,6 +233,19 @@ function useSavedPlaybackSpeed() {
   speedAnchor.click()
 }
 
+function clickButtonIfClickable(btn, niceName) {
+  if (!btn || btn.offsetParent === null) {
+    return
+  }
+  log(`${niceName} button found, clicking`)
+  btn.click()
+}
+
+function clickBtnIfVisible(className, niceName) {
+  const [btn] = document.getElementsByClassName(className)
+  clickButtonIfClickable(btn, niceName)
+}
+
 function autoFastForwardAds() {
   const classForOnlyVideoAds = 'ytp-ad-player-overlay' // .video-ads at the top level also includes footer ads
   const [adContainer] = document.getElementsByClassName(classForOnlyVideoAds)
@@ -250,22 +263,9 @@ function autoFastForwardAds() {
   // FIXME disable check for ads from now on?
 }
 
-function clickBtnIfVisible(className, niceName) {
-  const [btn] = document.getElementsByClassName(className)
-  _clickButtonIfClickable(btn, niceName)
-}
-
 function clickBtnIfVisibleQS(querySelector, niceName) {
   const [btn] = document.querySelectorAll(querySelector)
-  _clickButtonIfClickable(btn, niceName)
-}
-
-function _clickButtonIfClickable(btn, niceName) {
-  if (!btn || btn.offsetParent === null) {
-    return
-  }
-  log(`${niceName} button found, clicking`)
-  btn.click()
+  clickButtonIfClickable(btn, niceName)
 }
 
 function cancelStupidAutoplay() {
@@ -284,7 +284,6 @@ function skipPremiumTrial() {
   const niceName = 'Skip premium trial'
   clickBtnIfVisibleQS('button[aria-label="No thanks"]', niceName)
 }
-
 
 function skipMusicPremiumTrial() {
   const niceName = 'Skip music premium trial'
