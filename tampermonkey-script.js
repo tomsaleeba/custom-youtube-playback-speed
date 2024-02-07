@@ -157,11 +157,8 @@ function appendSpeedControlContainer(targetElement) {
   const div = document.createElement('div')
   div.classList = 'techotom-speed-control'
   addCommonStyles(div)
-  div.style.margin = '6em 0 0 2em'
+  div.style.margin = '5em 0 0 2em'
   appendSpeedControl(div, 1)
-  appendSpeedControl(div, 1.25)
-  appendSpeedControl(div, 1.33)
-  appendSpeedControl(div, 1.5)
   appendSpeedControl(div, 1.75)
   appendSpeedControl(div, 1.88)
   appendSpeedControl(div, 2)
@@ -279,7 +276,8 @@ function cancelStupidAutoplay() {
 }
 
 function skipSurvey() {
-  clickBtnIfVisible('ytp-ad-skip-button ytp-button', 'skip survey')
+  clickBtnIfVisible('ytp-ad-skip-button', 'skip survey')
+  clickBtnIfVisible('ytp-ad-skip-button-modern', 'new skip survey')
 }
 
 function skipPremiumTrial() {
@@ -326,4 +324,3 @@ waitForTargetElement((targetElement) => {
   appendBalanceControlContainer(targetElement)
   runMainLoop()
 })
-
