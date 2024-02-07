@@ -157,11 +157,8 @@ function appendSpeedControlContainer(targetElement) {
   const div = document.createElement('div')
   div.classList = 'techotom-speed-control'
   addCommonStyles(div)
-  div.style.margin = '6em 0 0 2em'
+  div.style.margin = '5em 0 0 2em'
   appendSpeedControl(div, 1)
-  appendSpeedControl(div, 1.25)
-  appendSpeedControl(div, 1.33)
-  appendSpeedControl(div, 1.5)
   appendSpeedControl(div, 1.75)
   appendSpeedControl(div, 1.88)
   appendSpeedControl(div, 2)
@@ -236,6 +233,24 @@ function useSavedPlaybackSpeed() {
   speedAnchor.click()
 }
 
+function clickButtonIfClickable(btn, niceName) {
+  if (!btn || btn.offsetParent === null) {
+    return
+  }
+  log(`${niceName} button found, clicking`)
+  btn.click()
+}
+
+function clickBtnIfVisible(className, niceName) {
+  const [btn] = document.getElementsByClassName(className)
+  clickButtonIfClickable(btn, niceName)
+}
+
+function clickBtnIfVisibleQS(querySelector, niceName) {
+  const [btn] = document.querySelectorAll(querySelector)
+  clickButtonIfClickable(btn, niceName)
+}
+
 function autoFastForwardAds() {
   const classForOnlyVideoAds = 'ytp-ad-player-overlay' // .video-ads at the top level also includes footer ads
   const [adContainer] = document.getElementsByClassName(classForOnlyVideoAds)
@@ -253,24 +268,6 @@ function autoFastForwardAds() {
   // FIXME disable check for ads from now on?
 }
 
-function clickBtnIfVisible(className, niceName) {
-  const [btn] = document.getElementsByClassName(className)
-  _clickButtonIfClickable(btn, niceName)
-}
-
-function clickBtnIfVisibleQS(querySelector, niceName) {
-  const [btn] = document.querySelectorAll(querySelector)
-  _clickButtonIfClickable(btn, niceName)
-}
-
-function _clickButtonIfClickable(btn, niceName) {
-  if (!btn || btn.offsetParent === null) {
-    return
-  }
-  log(`${niceName} button found, clicking`)
-  btn.click()
-}
-
 function cancelStupidAutoplay() {
   clickBtnIfVisible(
     'ytp-autonav-endscreen-upnext-cancel-button',
@@ -279,12 +276,18 @@ function cancelStupidAutoplay() {
 }
 
 function skipSurvey() {
-  clickBtnIfVisible('ytp-ad-skip-button ytp-button', 'skip survey')
+  clickBtnIfVisible('ytp-ad-skip-button', 'skip survey')
+  clickBtnIfVisible('ytp-ad-skip-button-modern', 'new skip survey')
 }
 
 function skipPremiumTrial() {
   const niceName = 'Skip premium trial'
   clickBtnIfVisibleQS('button[aria-label="No thanks"]', niceName)
+}
+
+function skipMusicPremiumTrial() {
+  const niceName = 'Skip music premium trial'
+  clickBtnIfVisibleQS('button[aria-label="Skip trial"]', niceName)
 }
 
 function premiumNoThanks() {
@@ -306,6 +309,7 @@ function runMainLoop() {
     cancelStupidAutoplay()
     skipSurvey()
     skipPremiumTrial()
+    skipMusicPremiumTrial()
     premiumNoThanks()
     fadeAdOverlay()
   }
