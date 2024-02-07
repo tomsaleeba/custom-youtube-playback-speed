@@ -10,7 +10,9 @@ module.exports = {
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-var': 2,
     'prefer-const': 2,
-    'no-param-reassign': 'off'
+    'no-use-before-define': 'off',
+    'no-underscore-dangle': 'off',
+    'no-param-reassign': 'off',
   },
   globals: {
     document: 'readonly',
