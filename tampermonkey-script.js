@@ -246,6 +246,11 @@ function clickBtnIfVisible(className, niceName) {
   clickButtonIfClickable(btn, niceName)
 }
 
+function clickBtnIfVisibleQS(querySelector, niceName) {
+  const [btn] = document.querySelectorAll(querySelector)
+  clickButtonIfClickable(btn, niceName)
+}
+
 function autoFastForwardAds() {
   const classForOnlyVideoAds = 'ytp-ad-player-overlay' // .video-ads at the top level also includes footer ads
   const [adContainer] = document.getElementsByClassName(classForOnlyVideoAds)
@@ -261,11 +266,6 @@ function autoFastForwardAds() {
   clickBtnIfVisible('ytp-ad-skip-button', 'old skip button')
   clickBtnIfVisible('ytp-ad-skip-button-modern', 'new skip button')
   // FIXME disable check for ads from now on?
-}
-
-function clickBtnIfVisibleQS(querySelector, niceName) {
-  const [btn] = document.querySelectorAll(querySelector)
-  clickButtonIfClickable(btn, niceName)
 }
 
 function cancelStupidAutoplay() {
