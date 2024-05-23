@@ -252,7 +252,7 @@ function clickBtnIfVisibleQS(querySelector, niceName) {
 }
 
 function autoFastForwardAds() {
-  const classForOnlyVideoAds = 'ytp-ad-player-overlay' // .video-ads at the top level also includes footer ads
+  const classForOnlyVideoAds = 'ad-showing'
   const [adContainer] = document.getElementsByClassName(classForOnlyVideoAds)
   const isAdHidden = !adContainer || adContainer.offsetParent === null
   const speedAnchor = document.getElementById(maxFastnessAnchorId)
