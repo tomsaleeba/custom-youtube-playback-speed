@@ -285,14 +285,17 @@ function autoFastForwardAds() {
   clickBtnIfVisible('ytp-ad-skip-button', 'old skip button')
   clickBtnIfVisible('ytp-ad-skip-button-modern', '2024-feb skip button')
   clickBtnIfVisible('ytp-skip-ad-button', '2024-jun skip button')
-  clickBtnIfVisibleQS('button[id="skip-button:x"]', '2024-jun skip button (by ID)')
+  clickBtnIfVisibleQS(
+    'button[id="skip-button:x"]',
+    '2024-jun skip button (by ID)',
+  )
   // FIXME disable check for ads from now on?
 }
 
 function assertMuteState(isMute) {
   const muteButton = document.querySelector('.ytp-mute-button')
   const currMuteState = muteButton.title.startsWith('Unmute')
-  trace(JSON.stringify({currMuteState, isMute}))
+  trace(JSON.stringify({ currMuteState, isMute }))
   if (currMuteState === isMute) {
     return
   }
@@ -345,9 +348,9 @@ function runMainLoop() {
     fadeAdOverlay()
   }
   // "Ad blockers are not allowed on YouTube" modal
-    // document.querySelector('.ytd-enforcement-message-view-model') - the modal
-    // document.querySelector('yt-button-view-model[icon="COUNTDOWN_TO_CLOSE"]').click() - close button (after timer has expired)
-    // need to click play on the ad again too
+  // document.querySelector('.ytd-enforcement-message-view-model') - the modal
+  // document.querySelector('yt-button-view-model[icon="COUNTDOWN_TO_CLOSE"]').click() - close button (after timer has expired)
+  // need to click play on the ad again too
   setInterval(worker, mainLoopInterval)
   // FIXME do we need to clearInterval() ?
 }
