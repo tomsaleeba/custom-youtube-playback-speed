@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube custom speeds
 // @namespace    https://github.com/tomsaleeba
-// @version      0.9
+// @version      0.91
 // @description  Adds a div to the YouTube player page with custom speed controls
 // @author       Tom Saleeba
 // @match        https://www.youtube.com/*
@@ -11,10 +11,12 @@
 
 const maxFastnessAnchorId = 'max-fastness'
 const mainLoopInterval = 1000
+// FIXME should I be using session storage? Is that per-tab?
 const lsKeyPrefix = 'techotom.yt.'
 const lsKeyUserSpeed = `${lsKeyPrefix}user-speed`
 const lsKeyIsAdFF = `${lsKeyPrefix}is-ad-ff`
 let panner = null
+const isTrace = false
 
 function resetBoldness(className) {
   const speedSelectors = document.getElementsByClassName(className)
@@ -27,6 +29,13 @@ function resetBoldness(className) {
 function log(msg) {
   const logPrefix = 'TechoTom custom speeds'
   unsafeWindow.console.debug(`[${logPrefix}] ${msg}`)
+}
+
+function trace(msg) {
+  if (!isTrace) {
+    return
+  }
+  log(` [TRACE] ${msg}`)
 }
 
 function setPlayerSpeed(newSpeed) {
@@ -252,20 +261,42 @@ function clickBtnIfVisibleQS(querySelector, niceName) {
 }
 
 function autoFastForwardAds() {
+  const speedAnchor = document.getElementById(maxFastnessAnchorId)
+  if (!speedAnchor) {
+    trace('no speed anchor')
+    // don't control the player when the human can't control us
+    return
+  }
   const classForOnlyVideoAds = 'ad-showing'
   const [adContainer] = document.getElementsByClassName(classForOnlyVideoAds)
   const isAdHidden = !adContainer || adContainer.offsetParent === null
-  const speedAnchor = document.getElementById(maxFastnessAnchorId)
-  if (isAdHidden || !speedAnchor) {
+  if (isAdHidden) {
+    trace('ad *is* hidden')
     useSavedPlaybackSpeed()
+    assertMuteState(false)
     return
   }
-  log('ad is playing, time to fast forward!')
   localStorage.setItem(lsKeyIsAdFF, true)
-  speedAnchor.click()
+  assertMuteState(true)
+  // // disabled because YouTube is detecting ad-blockers
+  // log('ad is playing, time to fast forward!')
+  // speedAnchor.click()
+  log('ad is playing, waiting for clickable skip button!')
   clickBtnIfVisible('ytp-ad-skip-button', 'old skip button')
-  clickBtnIfVisible('ytp-ad-skip-button-modern', 'new skip button')
+  clickBtnIfVisible('ytp-ad-skip-button-modern', '2024-feb skip button')
+  clickBtnIfVisible('ytp-skip-ad-button', '2024-jun skip button')
+  clickBtnIfVisibleQS('button[id="skip-button:x"]', '2024-jun skip button (by ID)')
   // FIXME disable check for ads from now on?
+}
+
+function assertMuteState(isMute) {
+  const muteButton = document.querySelector('.ytp-mute-button')
+  const currMuteState = muteButton.title.startsWith('Unmute')
+  trace(JSON.stringify({currMuteState, isMute}))
+  if (currMuteState === isMute) {
+    return
+  }
+  muteButton.click()
 }
 
 function cancelStupidAutoplay() {
@@ -313,8 +344,12 @@ function runMainLoop() {
     premiumNoThanks()
     fadeAdOverlay()
   }
-  /* const intervalThingy = */ setInterval(worker, mainLoopInterval)
-  // FIXME do we need to clearInterval(intervalThingy) ?
+  // "Ad blockers are not allowed on YouTube" modal
+    // document.querySelector('.ytd-enforcement-message-view-model') - the modal
+    // document.querySelector('yt-button-view-model[icon="COUNTDOWN_TO_CLOSE"]').click() - close button (after timer has expired)
+    // need to click play on the ad again too
+  setInterval(worker, mainLoopInterval)
+  // FIXME do we need to clearInterval() ?
 }
 
 waitForTargetElement((targetElement) => {
