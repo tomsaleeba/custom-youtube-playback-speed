@@ -9,12 +9,11 @@
 // ==/UserScript==
 /* jshint -W097 */
 
-const maxFastnessAnchorId = 'max-fastness'
+const adFastFordwardAnchorId = 'ad-ff-speed'
 const mainLoopInterval = 1000
-// FIXME should I be using session storage? Is that per-tab?
-const lsKeyPrefix = 'techotom.yt.'
-const lsKeyUserSpeed = `${lsKeyPrefix}user-speed`
-const lsKeyIsAdFF = `${lsKeyPrefix}is-ad-ff`
+const ssKeyPrefix = 'techotom.yt.'
+const ssKeyUserSpeed = `${ssKeyPrefix}user-speed`
+const ssKeyIsAdFF = `${ssKeyPrefix}is-ad-ff`
 let panner = null
 const isTrace = false
 
@@ -54,14 +53,14 @@ function appendSpeedControl(div, speed, idToUse) {
     setPlayerSpeed(speed)
     resetBoldness(className)
     this.style.fontWeight = 'bold'
-    const isAdTriggeredSpeedChange = localStorage.getItem(lsKeyIsAdFF)
-    localStorage.removeItem(lsKeyIsAdFF)
+    const isAdTriggeredSpeedChange = sessionStorage.getItem(ssKeyIsAdFF)
+    sessionStorage.removeItem(ssKeyIsAdFF)
     if (isAdTriggeredSpeedChange) {
       return
     }
     // only save the user's speed setting otherwise we end up
     // re-setting the speed from the ads
-    localStorage.setItem(lsKeyUserSpeed, speed)
+    sessionStorage.setItem(ssKeyUserSpeed, speed)
   }
   speedAnchor.classList.add(className)
   speedAnchor.classList.add(speedToClassName(speed))
@@ -110,7 +109,7 @@ function waitForTargetElement(callback) {
       return document.getElementsByTagName('ytd-watch')[0]
     },
     function playerContainer() {
-      return document.getElementById('player-container')
+      return document.querySelectorAll('body ytd-app #content')[0]
     },
   ]
   let targetElement
@@ -170,13 +169,13 @@ function appendSpeedControlContainer(targetElement) {
   appendSpeedControl(div, 1)
   appendSpeedControl(div, 1.75)
   appendSpeedControl(div, 1.88)
-  appendSpeedControl(div, 2)
+  appendSpeedControl(div, 2, adFastFordwardAnchorId)
   appendSpeedControl(div, 2.1)
   appendSpeedControl(div, 2.25)
   appendSpeedControl(div, 2.5)
   appendSpeedControl(div, 2.75)
   appendSpeedControl(div, 3)
-  appendSpeedControl(div, 10, maxFastnessAnchorId)
+  appendSpeedControl(div, 10)
   targetElement.insertBefore(div, targetElement.childNodes[0])
 }
 
@@ -223,7 +222,7 @@ function useSavedPlaybackSpeed() {
   if (isLiveBroadcast()) {
     return
   }
-  const savedSpeed = localStorage.getItem(lsKeyUserSpeed)
+  const savedSpeed = sessionStorage.getItem(ssKeyUserSpeed)
   if (!savedSpeed) {
     return
   }
@@ -261,7 +260,7 @@ function clickBtnIfVisibleQS(querySelector, niceName) {
 }
 
 function autoFastForwardAds() {
-  const speedAnchor = document.getElementById(maxFastnessAnchorId)
+  const speedAnchor = document.getElementById(adFastFordwardAnchorId)
   if (!speedAnchor) {
     trace('no speed anchor')
     // don't control the player when the human can't control us
@@ -276,11 +275,10 @@ function autoFastForwardAds() {
     assertMuteState(false)
     return
   }
-  localStorage.setItem(lsKeyIsAdFF, true)
+  sessionStorage.setItem(ssKeyIsAdFF, true)
   assertMuteState(true)
-  // // disabled because YouTube is detecting ad-blockers
-  // log('ad is playing, time to fast forward!')
-  // speedAnchor.click()
+  log('ad is playing, time to fast forward!')
+  speedAnchor.click()
   log('ad is playing, waiting for clickable skip button!')
   clickBtnIfVisible('ytp-ad-skip-button', 'old skip button')
   clickBtnIfVisible('ytp-ad-skip-button-modern', '2024-feb skip button')
