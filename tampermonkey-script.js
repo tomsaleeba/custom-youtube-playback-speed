@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube custom speeds
 // @namespace    https://github.com/tomsaleeba
-// @version      0.9
+// @version      0.91
 // @description  Adds a div to the YouTube player page with custom speed controls
 // @author       Tom Saleeba
 // @match        https://www.youtube.com/*
@@ -9,12 +9,13 @@
 // ==/UserScript==
 /* jshint -W097 */
 
-const maxFastnessAnchorId = 'max-fastness'
+const adFastFordwardAnchorId = 'ad-ff-speed'
 const mainLoopInterval = 1000
-const lsKeyPrefix = 'techotom.yt.'
-const lsKeyUserSpeed = `${lsKeyPrefix}user-speed`
-const lsKeyIsAdFF = `${lsKeyPrefix}is-ad-ff`
+const ssKeyPrefix = 'techotom.yt.'
+const ssKeyUserSpeed = `${ssKeyPrefix}user-speed`
+const ssKeyIsAdFF = `${ssKeyPrefix}is-ad-ff`
 let panner = null
+const isTrace = false
 
 function resetBoldness(className) {
   const speedSelectors = document.getElementsByClassName(className)
@@ -27,6 +28,13 @@ function resetBoldness(className) {
 function log(msg) {
   const logPrefix = 'TechoTom custom speeds'
   unsafeWindow.console.debug(`[${logPrefix}] ${msg}`)
+}
+
+function trace(msg) {
+  if (!isTrace) {
+    return
+  }
+  log(` [TRACE] ${msg}`)
 }
 
 function setPlayerSpeed(newSpeed) {
@@ -45,14 +53,14 @@ function appendSpeedControl(div, speed, idToUse) {
     setPlayerSpeed(speed)
     resetBoldness(className)
     this.style.fontWeight = 'bold'
-    const isAdTriggeredSpeedChange = localStorage.getItem(lsKeyIsAdFF)
-    localStorage.removeItem(lsKeyIsAdFF)
+    const isAdTriggeredSpeedChange = sessionStorage.getItem(ssKeyIsAdFF)
+    sessionStorage.removeItem(ssKeyIsAdFF)
     if (isAdTriggeredSpeedChange) {
       return
     }
     // only save the user's speed setting otherwise we end up
     // re-setting the speed from the ads
-    localStorage.setItem(lsKeyUserSpeed, speed)
+    sessionStorage.setItem(ssKeyUserSpeed, speed)
   }
   speedAnchor.classList.add(className)
   speedAnchor.classList.add(speedToClassName(speed))
@@ -101,7 +109,7 @@ function waitForTargetElement(callback) {
       return document.getElementsByTagName('ytd-watch')[0]
     },
     function playerContainer() {
-      return document.getElementById('player-container')
+      return document.querySelectorAll('body ytd-app #content')[0]
     },
   ]
   let targetElement
@@ -157,20 +165,17 @@ function appendSpeedControlContainer(targetElement) {
   const div = document.createElement('div')
   div.classList = 'techotom-speed-control'
   addCommonStyles(div)
-  div.style.margin = '6em 0 0 2em'
+  div.style.margin = '5em 0 0 2em'
   appendSpeedControl(div, 1)
-  appendSpeedControl(div, 1.25)
-  appendSpeedControl(div, 1.33)
-  appendSpeedControl(div, 1.5)
   appendSpeedControl(div, 1.75)
   appendSpeedControl(div, 1.88)
-  appendSpeedControl(div, 2)
+  appendSpeedControl(div, 2, adFastFordwardAnchorId)
   appendSpeedControl(div, 2.1)
   appendSpeedControl(div, 2.25)
   appendSpeedControl(div, 2.5)
   appendSpeedControl(div, 2.75)
   appendSpeedControl(div, 3)
-  appendSpeedControl(div, 10, maxFastnessAnchorId)
+  appendSpeedControl(div, 10)
   targetElement.insertBefore(div, targetElement.childNodes[0])
 }
 
@@ -217,7 +222,7 @@ function useSavedPlaybackSpeed() {
   if (isLiveBroadcast()) {
     return
   }
-  const savedSpeed = localStorage.getItem(lsKeyUserSpeed)
+  const savedSpeed = sessionStorage.getItem(ssKeyUserSpeed)
   if (!savedSpeed) {
     return
   }
@@ -236,39 +241,63 @@ function useSavedPlaybackSpeed() {
   speedAnchor.click()
 }
 
-function autoFastForwardAds() {
-  const classForOnlyVideoAds = 'ytp-ad-player-overlay' // .video-ads at the top level also includes footer ads
-  const [adContainer] = document.getElementsByClassName(classForOnlyVideoAds)
-  const isAdHidden = !adContainer || adContainer.offsetParent === null
-  const speedAnchor = document.getElementById(maxFastnessAnchorId)
-  if (isAdHidden || !speedAnchor) {
-    useSavedPlaybackSpeed()
-    return
-  }
-  log('ad is playing, time to fast forward!')
-  localStorage.setItem(lsKeyIsAdFF, true)
-  speedAnchor.click()
-  clickBtnIfVisible('ytp-ad-skip-button', 'old skip button')
-  clickBtnIfVisible('ytp-ad-skip-button-modern', 'new skip button')
-  // FIXME disable check for ads from now on?
-}
-
-function clickBtnIfVisible(className, niceName) {
-  const [btn] = document.getElementsByClassName(className)
-  _clickButtonIfClickable(btn, niceName)
-}
-
-function clickBtnIfVisibleQS(querySelector, niceName) {
-  const [btn] = document.querySelectorAll(querySelector)
-  _clickButtonIfClickable(btn, niceName)
-}
-
-function _clickButtonIfClickable(btn, niceName) {
+function clickButtonIfClickable(btn, niceName) {
   if (!btn || btn.offsetParent === null) {
     return
   }
   log(`${niceName} button found, clicking`)
   btn.click()
+}
+
+function clickBtnIfVisible(className, niceName) {
+  const [btn] = document.getElementsByClassName(className)
+  clickButtonIfClickable(btn, niceName)
+}
+
+function clickBtnIfVisibleQS(querySelector, niceName) {
+  const [btn] = document.querySelectorAll(querySelector)
+  clickButtonIfClickable(btn, niceName)
+}
+
+function autoFastForwardAds() {
+  const speedAnchor = document.getElementById(adFastFordwardAnchorId)
+  if (!speedAnchor) {
+    trace('no speed anchor')
+    // don't control the player when the human can't control us
+    return
+  }
+  const classForOnlyVideoAds = 'ad-showing'
+  const [adContainer] = document.getElementsByClassName(classForOnlyVideoAds)
+  const isAdHidden = !adContainer || adContainer.offsetParent === null
+  if (isAdHidden) {
+    trace('ad *is* hidden')
+    useSavedPlaybackSpeed()
+    assertMuteState(false)
+    return
+  }
+  sessionStorage.setItem(ssKeyIsAdFF, true)
+  assertMuteState(true)
+  log('ad is playing, time to fast forward!')
+  speedAnchor.click()
+  log('ad is playing, waiting for clickable skip button!')
+  clickBtnIfVisible('ytp-ad-skip-button', 'old skip button')
+  clickBtnIfVisible('ytp-ad-skip-button-modern', '2024-feb skip button')
+  clickBtnIfVisible('ytp-skip-ad-button', '2024-jun skip button')
+  clickBtnIfVisibleQS(
+    'button[id="skip-button:x"]',
+    '2024-jun skip button (by ID)',
+  )
+  // FIXME disable check for ads from now on?
+}
+
+function assertMuteState(isMute) {
+  const muteButton = document.querySelector('.ytp-mute-button')
+  const currMuteState = muteButton.title.startsWith('Unmute')
+  trace(JSON.stringify({ currMuteState, isMute }))
+  if (currMuteState === isMute) {
+    return
+  }
+  muteButton.click()
 }
 
 function cancelStupidAutoplay() {
@@ -279,12 +308,18 @@ function cancelStupidAutoplay() {
 }
 
 function skipSurvey() {
-  clickBtnIfVisible('ytp-ad-skip-button ytp-button', 'skip survey')
+  clickBtnIfVisible('ytp-ad-skip-button', 'skip survey')
+  clickBtnIfVisible('ytp-ad-skip-button-modern', 'new skip survey')
 }
 
 function skipPremiumTrial() {
   const niceName = 'Skip premium trial'
   clickBtnIfVisibleQS('button[aria-label="No thanks"]', niceName)
+}
+
+function skipMusicPremiumTrial() {
+  const niceName = 'Skip music premium trial'
+  clickBtnIfVisibleQS('button[aria-label="Skip trial"]', niceName)
 }
 
 function premiumNoThanks() {
@@ -306,11 +341,16 @@ function runMainLoop() {
     cancelStupidAutoplay()
     skipSurvey()
     skipPremiumTrial()
+    skipMusicPremiumTrial()
     premiumNoThanks()
     fadeAdOverlay()
   }
-  /* const intervalThingy = */ setInterval(worker, mainLoopInterval)
-  // FIXME do we need to clearInterval(intervalThingy) ?
+  // "Ad blockers are not allowed on YouTube" modal
+  // document.querySelector('.ytd-enforcement-message-view-model') - the modal
+  // document.querySelector('yt-button-view-model[icon="COUNTDOWN_TO_CLOSE"]').click() - close button (after timer has expired)
+  // need to click play on the ad again too
+  setInterval(worker, mainLoopInterval)
+  // FIXME do we need to clearInterval() ?
 }
 
 waitForTargetElement((targetElement) => {
