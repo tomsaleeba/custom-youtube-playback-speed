@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           YouTube Faster Playback Speed Buttons
-// @version        0.9.1
+// @version        0.9.2
 // @license        MIT
 // @description    Adds faster playback speed buttons to youtube player control bar with remember choice ability.
 // @author         Cihan Tuncer
@@ -15,7 +15,7 @@
 // Variable to store last URL for a URL change observer
 let lastUrl = location.href;
 
-// Try to icrease perfomance of observers with smaller content to look at
+// Try to increase perfomance of observers with smaller content to look at
 const targetNode = document.querySelector('#content') || document.body;
 
 var chnCurrSpeed = "x1";
@@ -32,16 +32,18 @@ var remBtn = document.createElement("button");
 
 remBtn.className = "ytp-button chn-button";
 remBtn.title = "Remember Playback Speed";
-remBtn.style.top = "-17px";
-remBtn.style.width = "12px";
-remBtn.style.height = "12px";
-remBtn.style.border = "2px solid white";
-remBtn.style.borderRadius = "50%";
-remBtn.style.opacity = ".5";
-remBtn.style.marginRight = "12px";
-remBtn.style.position = "relative";
-remBtn.style.background = "transparent";
-remBtn.style.padding = "0";
+remBtn.style.display = "flex";
+remBtn.style.justifyContent = "center";
+remBtn.style.alignItems = "center";
+
+// Create the outer circle
+var remBtnDiv = document.createElement("div");
+remBtnDiv.style.width = "12px";
+remBtnDiv.style.height = "12px";
+remBtnDiv.style.border = "2px solid white";
+remBtnDiv.style.borderRadius = "50%";
+remBtnDiv.style.opacity = ".5";
+remBtnDiv.style.background = "transparent";
 
 // Create the inner circle
 var innerCircle = document.createElement("div");
@@ -56,7 +58,8 @@ innerCircle.style.transform = "translate(-50%, -50%)";
 innerCircle.style.display = "none";
 
 
-remBtn.appendChild(innerCircle);
+remBtn.appendChild(remBtnDiv);
+remBtnDiv.appendChild(innerCircle);
 
 
 function callbackFunc (controlsMenu) {
@@ -72,20 +75,17 @@ function callbackFunc (controlsMenu) {
         var autoSpeed = localStorage.getItem("chnAutoSpeed");
         setStoredSpeed(autoSpeed);
 
-        remBtn.onmouseover = function() { this.style.opacity = 1; }
-        remBtn.onmouseleave = function() { this.style.opacity = 0.5; }
-
         remBtn.onclick = function() {
             var autoSpeed = localStorage.getItem("chnAutoSpeed");
 
             if (autoSpeed == 1) {
                 localStorage.setItem("chnAutoSpeed", 0);
-                remBtn.style.borderColor = "";
+                remBtnDiv.style.borderColor = "";
                 innerCircle.style.display = "none";
             } else {
                 localStorage.setItem("chnAutoSpeed", 1);
-                remBtn.style.borderColor = "#3ea6ff";
-                innerCircle.style.display = "block";
+                remBtnDiv.style.borderColor = "#3ea6ff";
+                innerCircle.style.display = "";
             }
         }
     }
@@ -98,8 +98,8 @@ function setStoredSpeed(autoSpeed) {
     if (autoSpeed == 1) {
         var savedBtn = document.querySelector("." + savedSpeed);
         savedBtn.click();
-        remBtn.style.borderColor = "#3ea6ff";
-        innerCircle.style.display = "block";
+        remBtnDiv.style.borderColor = "#3ea6ff";
+        innerCircle.style.display = "";
     }
 }
 
@@ -111,20 +111,19 @@ function makeBtn(classname,txt,val){
 
     var btn = document.createElement("button");
     btn.className = "ytp-button chn-button " + classname;
-    btn.style.top = "-13px";
-    btn.style.width = "auto";
-    btn.style.opacity = ".5";
-    btn.style.marginRight = "5px";
-    btn.style.position = "relative";
-    btn.innerHTML = txt;
+    btn.style.display = "flex";
+    btn.style.justifyContent = "center";
+    btn.style.alignItems = "center";
+
+    var textDiv = document.createElement("div");
+    textDiv.textContent = txt;
+
+    btn.appendChild(textDiv);
 
     btns.push(btn);
 
-    btn.onmouseover = function() { this.style.opacity=1; }
-    btn.onmouseleave = function() { this.style.opacity=.5; }
 
-
-    btn.onclick = function(){
+    btn.onclick = function() {
 
        chnCurrSpeed = classname;
        localStorage.setItem("chnCurrSpeed", classname);
@@ -149,6 +148,12 @@ function resetBtns(){
 }
 
 
+/*
+Functions taken from "YouTube custom speeds" script by Tom Saaleba
+https://github.com/tomsaleeba
+*/
+
+
 function waitForTargetElement(callback) {
     const observer = new MutationObserver(() => {
         const videoPlayer = document.querySelector("ytd-player")?.offsetParent;
@@ -168,11 +173,12 @@ function waitForTargetElement(callback) {
 }
 
 
-const urlObserver = new MutationObserver(() => {
+const urlObserver = new MutationObserver(async () => {
     const currentUrl = location.href;
     if (currentUrl !== lastUrl) {
         console.log("[URL Observer] URL changed:", currentUrl);
         lastUrl = currentUrl;
+        await sleep(2000);
         waitForTargetElement(callbackFunc);
     }
 });
@@ -182,6 +188,9 @@ function setPlayerSpeed(newSpeed) {
     document.getElementsByClassName('html5-main-video')[0].playbackRate = newSpeed;
 }
 
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 waitForTargetElement(callbackFunc);
 
