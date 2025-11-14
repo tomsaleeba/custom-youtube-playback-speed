@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           YouTube Faster Playback Speed Buttons
-// @version        0.9.2
+// @version        0.9.3
 // @license        MIT
 // @description    Adds faster playback speed buttons to youtube player control bar with remember choice ability.
 // @author         Cihan Tuncer
@@ -74,6 +74,7 @@ function callbackFunc (controlsMenu) {
 
         var autoSpeed = localStorage.getItem("chnAutoSpeed");
         setStoredSpeed(autoSpeed);
+        addClickEventToLiveButton();
 
         remBtn.onclick = function() {
             var autoSpeed = localStorage.getItem("chnAutoSpeed");
@@ -91,15 +92,31 @@ function callbackFunc (controlsMenu) {
     }
 }
 
-
 function setStoredSpeed(autoSpeed) {
     var savedSpeed = localStorage.getItem("chnCurrSpeed") || "x1";
 
     if (autoSpeed == 1) {
-        var savedBtn = document.querySelector("." + savedSpeed);
-        savedBtn.click();
         remBtnDiv.style.borderColor = "#3ea6ff";
         innerCircle.style.display = "";
+
+        var isLive = document.querySelector(".ytp-live-badge-is-livehead") != undefined;
+
+        if (isLive) {
+            resetBtns();
+        } else {
+            var savedBtn = document.querySelector("." + savedSpeed);
+            savedBtn.click();
+        }
+    }
+}
+
+function addClickEventToLiveButton() {
+    var liveButton = document.querySelector(".ytp-live-badge");
+    if (liveButton) {
+        liveButton.onclick = function() {
+            resetBtns();
+            setPlayerSpeed(1);
+        }
     }
 }
 
