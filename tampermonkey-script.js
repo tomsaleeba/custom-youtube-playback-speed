@@ -1,321 +1,217 @@
 // ==UserScript==
-// @name         YouTube custom speeds
-// @namespace    https://github.com/tomsaleeba
-// @version      0.9
-// @description  Adds a div to the YouTube player page with custom speed controls
-// @author       Tom Saleeba
-// @match        https://www.youtube.com/*
-// @grant        unsafeWindow
+// @name           YouTube Faster Playback Speed Buttons
+// @version        0.9.3
+// @license        MIT
+// @description    Adds faster playback speed buttons to youtube player control bar with remember choice ability.
+// @author         Cihan Tuncer
+// @author         FurTactics
+// @match          https://www.youtube.com/*
+// @grant          unsafeWindow
+// @namespace      https://greasyfork.org/users/463229
 // ==/UserScript==
 /* jshint -W097 */
+'use strict';
 
-const maxFastnessAnchorId = 'max-fastness'
-const mainLoopInterval = 1000
-const lsKeyPrefix = 'techotom.yt.'
-const lsKeyUserSpeed = `${lsKeyPrefix}user-speed`
-const lsKeyIsAdFF = `${lsKeyPrefix}is-ad-ff`
-let panner = null
+// Variable to store last URL for a URL change observer
+let lastUrl = location.href;
 
-function resetBoldness(className) {
-  const speedSelectors = document.getElementsByClassName(className)
-  for (let i = 0; i < speedSelectors.length; i += 1) {
-    const curr = speedSelectors[i]
-    curr.style.fontWeight = 'normal'
-  }
+// Try to increase perfomance of observers with smaller content to look at
+const targetNode = document.querySelector('#content') || document.body;
+
+var chnCurrSpeed = "x1";
+
+var btns = [];
+
+var x100 = makeBtn("x1","1x",1);
+var x125 = makeBtn("x125","1.25x",1.25);
+var x150 = makeBtn("x150","1.50x",1.50);
+var x175 = makeBtn("x175","1.75x",1.75);
+var x200 = makeBtn("x2","2x",2);
+
+var remBtn = document.createElement("button");
+
+remBtn.className = "ytp-button chn-button";
+remBtn.title = "Remember Playback Speed";
+remBtn.style.display = "flex";
+remBtn.style.justifyContent = "center";
+remBtn.style.alignItems = "center";
+
+// Create the outer circle
+var remBtnDiv = document.createElement("div");
+remBtnDiv.style.width = "12px";
+remBtnDiv.style.height = "12px";
+remBtnDiv.style.border = "2px solid white";
+remBtnDiv.style.borderRadius = "50%";
+remBtnDiv.style.opacity = ".5";
+remBtnDiv.style.background = "transparent";
+
+// Create the inner circle
+var innerCircle = document.createElement("div");
+innerCircle.style.width = "4px";
+innerCircle.style.height = "4px";
+innerCircle.style.borderRadius = "50%";
+innerCircle.style.backgroundColor = "#3ea6ff";
+innerCircle.style.position = "absolute";
+innerCircle.style.top = "50%";
+innerCircle.style.left = "50%";
+innerCircle.style.transform = "translate(-50%, -50%)";
+innerCircle.style.display = "none";
+
+
+remBtn.appendChild(remBtnDiv);
+remBtnDiv.appendChild(innerCircle);
+
+
+function callbackFunc (controlsMenu) {
+
+    if (typeof controlsMenu !== 'undefined' && controlsMenu !== null) {
+        controlsMenu.prepend(x200);
+        controlsMenu.prepend(x175);
+        controlsMenu.prepend(x150);
+        controlsMenu.prepend(x125);
+        controlsMenu.prepend(x100);
+        controlsMenu.prepend(remBtn);
+
+        var autoSpeed = localStorage.getItem("chnAutoSpeed");
+        setStoredSpeed(autoSpeed);
+        addClickEventToLiveButton();
+
+        remBtn.onclick = function() {
+            var autoSpeed = localStorage.getItem("chnAutoSpeed");
+
+            if (autoSpeed == 1) {
+                localStorage.setItem("chnAutoSpeed", 0);
+                remBtnDiv.style.borderColor = "";
+                innerCircle.style.display = "none";
+            } else {
+                localStorage.setItem("chnAutoSpeed", 1);
+                remBtnDiv.style.borderColor = "#3ea6ff";
+                innerCircle.style.display = "";
+            }
+        }
+    }
 }
 
-function log(msg) {
-  const logPrefix = 'TechoTom custom speeds'
-  unsafeWindow.console.debug(`[${logPrefix}] ${msg}`)
+function setStoredSpeed(autoSpeed) {
+    var savedSpeed = localStorage.getItem("chnCurrSpeed") || "x1";
+
+    if (autoSpeed == 1) {
+        remBtnDiv.style.borderColor = "#3ea6ff";
+        innerCircle.style.display = "";
+
+        var isLive = document.querySelector(".ytp-live-badge-is-livehead") != undefined;
+
+        if (isLive) {
+            resetBtns();
+        } else {
+            var savedBtn = document.querySelector("." + savedSpeed);
+            savedBtn.click();
+        }
+    }
 }
+
+function addClickEventToLiveButton() {
+    var liveButton = document.querySelector(".ytp-live-badge");
+    if (liveButton) {
+        liveButton.onclick = function() {
+            resetBtns();
+            setPlayerSpeed(1);
+        }
+    }
+}
+
+
+function makeBtn(classname,txt,val){
+
+    txt = txt || "1x";
+    val = val || 1;
+
+    var btn = document.createElement("button");
+    btn.className = "ytp-button chn-button " + classname;
+    btn.style.display = "flex";
+    btn.style.justifyContent = "center";
+    btn.style.alignItems = "center";
+
+    var textDiv = document.createElement("div");
+    textDiv.textContent = txt;
+
+    btn.appendChild(textDiv);
+
+    btns.push(btn);
+
+
+    btn.onclick = function() {
+
+       chnCurrSpeed = classname;
+       localStorage.setItem("chnCurrSpeed", classname);
+       setPlayerSpeed(val);
+       resetBtns();
+       this.style.fontWeight="800"
+       this.style.color="#3ea6ff"
+    }
+
+    return btn;
+}
+
+
+function resetBtns(){
+    var len = btns.length;
+
+    for (var i = 0; i < len; i++) {
+
+        btns[i].style.fontWeight="normal";
+        btns[i].style.color="";
+    }
+}
+
+
+/*
+Functions taken from "YouTube custom speeds" script by Tom Saaleba
+https://github.com/tomsaleeba
+*/
+
+
+function waitForTargetElement(callback) {
+    const observer = new MutationObserver(() => {
+        const videoPlayer = document.querySelector("ytd-player")?.offsetParent;
+        const controls = document.querySelector(".ytp-right-controls");
+        const controlsAppear = controls?.offsetParent;
+
+        if (videoPlayer && controls && controlsAppear) {
+
+            console.log("[Video Observer] Video and controls found — initialize");
+            observer.disconnect();
+            callback(controls);
+        }
+    });
+
+    observer.observe(targetNode, { childList: true, subtree: true });
+
+}
+
+
+const urlObserver = new MutationObserver(async () => {
+    const currentUrl = location.href;
+    if (currentUrl !== lastUrl) {
+        console.log("[URL Observer] URL changed:", currentUrl);
+        lastUrl = currentUrl;
+        await sleep(2000);
+        waitForTargetElement(callbackFunc);
+    }
+});
+
 
 function setPlayerSpeed(newSpeed) {
-  document.getElementsByClassName('html5-main-video')[0].playbackRate = newSpeed
+    document.getElementsByClassName('html5-main-video')[0].playbackRate = newSpeed;
 }
 
-function speedToClassName(speed) {
-  return `techotom-yt-${`${speed}`.replace('.', '-')}`
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function appendSpeedControl(div, speed, idToUse) {
-  const className = 'speed-selector'
-  const speedAnchor = document.createElement('a')
-  speedAnchor.style.display = 'block'
-  speedAnchor.onclick = function handler() {
-    setPlayerSpeed(speed)
-    resetBoldness(className)
-    this.style.fontWeight = 'bold'
-    const isAdTriggeredSpeedChange = localStorage.getItem(lsKeyIsAdFF)
-    localStorage.removeItem(lsKeyIsAdFF)
-    if (isAdTriggeredSpeedChange) {
-      return
-    }
-    // only save the user's speed setting otherwise we end up
-    // re-setting the speed from the ads
-    localStorage.setItem(lsKeyUserSpeed, speed)
-  }
-  speedAnchor.classList.add(className)
-  speedAnchor.classList.add(speedToClassName(speed))
-  const label = document.createTextNode(`${speed}x`)
-  speedAnchor.appendChild(label)
-  if (idToUse) {
-    speedAnchor.id = idToUse
-  }
-  div.appendChild(speedAnchor)
-}
+waitForTargetElement(callbackFunc);
 
-function appendBalanceControl(div, label, valToUse) {
-  const className = 'balance-selector'
-  const balanceAnchor = document.createElement('a')
-  balanceAnchor.style.display = 'block'
-  balanceAnchor.onclick = function handler() {
-    resetBoldness(className)
-    this.style.fontWeight = 'bold'
-    const isPannerInited = !!panner
-    if (!isPannerInited) {
-      log('Initialising panner')
-      const audioCtx = new (unsafeWindow.AudioContext ||
-        unsafeWindow.webkitAudioContext)()
-      const myVideo = document.querySelector('video')
-      const source = audioCtx.createMediaElementSource(myVideo)
-      panner = audioCtx.createStereoPanner()
-      source.connect(panner).connect(audioCtx.destination)
-    }
-    log(`Panning to ${label} (${valToUse})`)
-    panner.pan.value = valToUse
-  }
-  balanceAnchor.classList.add(className)
-  balanceAnchor.appendChild(document.createTextNode(label))
-  div.appendChild(balanceAnchor)
-}
 
-let callCount = 0
-function waitForTargetElement(callback) {
-  callCount += 1
-  log(`Check #${callCount} for target element`)
-  const strategies = [
-    function noId() {
-      return document.querySelectorAll('.html5-video-player')[0]
-    },
-    function ytdWatch() {
-      return document.getElementsByTagName('ytd-watch')[0]
-    },
-    function playerContainer() {
-      return document.getElementById('player-container')
-    },
-  ]
-  let targetElement
-  for (let i = 0; i < strategies.length; i += 1) {
-    const currStrategy = strategies[i]
-    targetElement = currStrategy()
-    if (targetElement) {
-      log(`success with strategy: ${currStrategy.name}`)
-      break
-    }
-  }
-  if (typeof targetElement !== 'undefined' && targetElement !== null) {
-    callback(targetElement)
-    return
-  }
-  const waitMs = Math.max(10 * callCount, 2000)
-  setTimeout(() => {
-    waitForTargetElement(callback)
-  }, waitMs)
-}
+urlObserver.observe(targetNode, { childList: true, subtree: true });
 
-function appendCss() {
-  const css = `
-    .techotom-speed-control, .techotom-balance-control {
-      opacity: 0.1;
-      color: #000;
-    }
-    .techotom-speed-control:hover, .techotom-balance-control:hover {
-      opacity: 0.8;
-    }
-    .techotom-speed-control a.speed-selector:hover, .techotom-balance-control a.balance-selector:hover {
-      color: #4f4f4f;
-    }
-  `
-  const head = document.head || document.getElementsByTagName('head')[0]
-  const style = document.createElement('style')
-  style.type = 'text/css'
-  style.appendChild(document.createTextNode(css))
-  head.appendChild(style)
-}
 
-function addCommonStyles(div) {
-  div.style.position = 'absolute'
-  div.style.fontSize = '2em'
-  div.style.background = '#FFF'
-  div.style.zIndex = '999'
-  div.style.top = '0'
-  div.style.left = '0'
-  div.style.borderRadius = '5px'
-}
-
-function appendSpeedControlContainer(targetElement) {
-  const div = document.createElement('div')
-  div.classList = 'techotom-speed-control'
-  addCommonStyles(div)
-  div.style.margin = '6em 0 0 2em'
-  appendSpeedControl(div, 1)
-  appendSpeedControl(div, 1.25)
-  appendSpeedControl(div, 1.33)
-  appendSpeedControl(div, 1.5)
-  appendSpeedControl(div, 1.75)
-  appendSpeedControl(div, 1.88)
-  appendSpeedControl(div, 2)
-  appendSpeedControl(div, 2.1)
-  appendSpeedControl(div, 2.25)
-  appendSpeedControl(div, 2.5)
-  appendSpeedControl(div, 2.75)
-  appendSpeedControl(div, 3)
-  appendSpeedControl(div, 10, maxFastnessAnchorId)
-  targetElement.insertBefore(div, targetElement.childNodes[0])
-}
-
-function appendBalanceControlContainer(targetElement) {
-  const div = document.createElement('div')
-  div.classList = 'techotom-balance-control'
-  addCommonStyles(div)
-  div.style.margin = '1em 0 0 2em'
-  appendBalanceControl(div, 'centre', 0)
-  appendBalanceControl(div, 'left', -1)
-  appendBalanceControl(div, 'right', 1)
-  targetElement.insertBefore(div, targetElement.childNodes[0])
-}
-
-function isLiveBroadcast() {
-  const watch7content = document.getElementById('watch7-content')
-  if (!watch7content) {
-    return false
-  }
-  if (watch7content.getElementsByTagName('span').length === 2) {
-    return false
-  }
-  const span3 = watch7content.getElementsByTagName('span')[2]
-  // live broadcasts that haven't ended yet
-  if (
-    span3.querySelector('meta[itemprop=startDate]') &&
-    !span3.querySelector('meta[itemprop=endDate]')
-  ) {
-    return true
-  }
-  const videoEndDateTime = span3
-    .querySelector('meta[itemprop=endDate]')
-    .content.slice(0, 19)
-  const currentDateTime = new Date().toISOString().slice(0, 19)
-  if (currentDateTime > videoEndDateTime) {
-    return false
-  }
-  return (
-    span3.querySelector('meta[itemprop=isLiveBroadcast]').content === 'True'
-  )
-}
-
-function useSavedPlaybackSpeed() {
-  if (isLiveBroadcast()) {
-    return
-  }
-  const savedSpeed = localStorage.getItem(lsKeyUserSpeed)
-  if (!savedSpeed) {
-    return
-  }
-  const existingSpeed =
-    document.getElementsByClassName('html5-main-video')[0].playbackRate
-  if (parseFloat(existingSpeed) === parseFloat(savedSpeed)) {
-    return
-  }
-  log(`Using previously set playback speed: ${savedSpeed}`)
-  const speedAnchor = document.getElementsByClassName(
-    speedToClassName(savedSpeed),
-  )[0]
-  if (!speedAnchor) {
-    return
-  }
-  speedAnchor.click()
-}
-
-function autoFastForwardAds() {
-  const classForOnlyVideoAds = 'ytp-ad-player-overlay' // .video-ads at the top level also includes footer ads
-  const [adContainer] = document.getElementsByClassName(classForOnlyVideoAds)
-  const isAdHidden = !adContainer || adContainer.offsetParent === null
-  const speedAnchor = document.getElementById(maxFastnessAnchorId)
-  if (isAdHidden || !speedAnchor) {
-    useSavedPlaybackSpeed()
-    return
-  }
-  log('ad is playing, time to fast forward!')
-  localStorage.setItem(lsKeyIsAdFF, true)
-  speedAnchor.click()
-  clickBtnIfVisible('ytp-ad-skip-button', 'old skip button')
-  clickBtnIfVisible('ytp-ad-skip-button-modern', 'new skip button')
-  // FIXME disable check for ads from now on?
-}
-
-function clickBtnIfVisible(className, niceName) {
-  const [btn] = document.getElementsByClassName(className)
-  _clickButtonIfClickable(btn, niceName)
-}
-
-function clickBtnIfVisibleQS(querySelector, niceName) {
-  const [btn] = document.querySelectorAll(querySelector)
-  _clickButtonIfClickable(btn, niceName)
-}
-
-function _clickButtonIfClickable(btn, niceName) {
-  if (!btn || btn.offsetParent === null) {
-    return
-  }
-  log(`${niceName} button found, clicking`)
-  btn.click()
-}
-
-function cancelStupidAutoplay() {
-  clickBtnIfVisible(
-    'ytp-autonav-endscreen-upnext-cancel-button',
-    'autoplay cancel',
-  )
-}
-
-function skipSurvey() {
-  clickBtnIfVisible('ytp-ad-skip-button ytp-button', 'skip survey')
-}
-
-function skipPremiumTrial() {
-  const niceName = 'Skip premium trial'
-  clickBtnIfVisibleQS('button[aria-label="No thanks"]', niceName)
-}
-
-function premiumNoThanks() {
-  const niceName = 'No thanks premium'
-  clickBtnIfVisibleQS('ytd-mealbar-promo-renderer #dismiss-button', niceName)
-}
-
-function fadeAdOverlay() {
-  const [thingy] = document.querySelectorAll('.ytp-ad-overlay-container')
-  if (!thingy || thingy.offsetParent === null) {
-    return
-  }
-  thingy.style.opacity = '0.1'
-}
-
-function runMainLoop() {
-  function worker() {
-    autoFastForwardAds()
-    cancelStupidAutoplay()
-    skipSurvey()
-    skipPremiumTrial()
-    premiumNoThanks()
-    fadeAdOverlay()
-  }
-  /* const intervalThingy = */ setInterval(worker, mainLoopInterval)
-  // FIXME do we need to clearInterval(intervalThingy) ?
-}
-
-waitForTargetElement((targetElement) => {
-  appendCss()
-  appendSpeedControlContainer(targetElement)
-  appendBalanceControlContainer(targetElement)
-  runMainLoop()
-})
